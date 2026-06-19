@@ -1,0 +1,9 @@
+services:
+  clock-tower-game:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    container_name: clock-tower-platformer
+    restart: unless-stopped
