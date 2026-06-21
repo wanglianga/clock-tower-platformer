@@ -70,14 +70,30 @@ export default class SpringDoor {
     this.body.visible = false;
   }
 
+  setCollisionEnabled(enabled) {
+    if (this.body.body) {
+      this.body.body.enable = enabled;
+    }
+  }
+
   update(time, delta) {
     if (this.paused) return;
 
     if (this.isOpen) {
       this.timer -= delta;
 
-      const progress = this.timer / this.windowDuration;
-      this.windowFill.width = this.width * Math.max(0, progress);
+      const totalProgress = this.timer / this.openDuration;
+      const windowProgress = Math.max(0, this.timer - (this.openDuration - this.windowDuration)) / this.windowDuration;
+
+      if (this.timer > this.openDuration - this.windowDuration) {
+        this.isInWindow = true;
+        this.windowFill.setFillStyle(0x00ff00);
+        this.windowFill.width = this.width * windowProgress;
+      } else if (this.timer > 0) {
+        this.isInWindow = false;
+        this.windowFill.setFillStyle(0xff6600);
+        this.windowFill.width = this.width * totalProgress;
+      }
 
       if (this.timer <= 0) {
         this.close();
@@ -90,23 +106,16 @@ export default class SpringDoor {
 
     this.isOpen = true;
     this.isInWindow = true;
-    this.timer = this.windowDuration;
+    this.timer = this.openDuration;
 
     this.sprite.setAlpha(0.3);
-    this.body.enable = false;
+    this.setCollisionEnabled(false);
     this.windowIndicator.setFillStyle(0x444444);
     this.windowFill.setFillStyle(0x00ff00);
     this.windowFill.width = this.width;
 
     if (this.scene.playSound) this.scene.playSound('spring-open');
     this.scene.events.emit('springDoorStateChange', { open: true, door: this });
-
-    this.scene.time.delayedCall(this.openDuration - this.windowDuration, () => {
-      if (this.isOpen) {
-        this.isInWindow = false;
-        this.windowFill.setFillStyle(0xff6600);
-      }
-    });
   }
 
   close() {
@@ -115,7 +124,7 @@ export default class SpringDoor {
     this.timer = 0;
 
     this.sprite.setAlpha(1);
-    this.body.enable = true;
+    this.setCollisionEnabled(true);
     this.windowFill.width = 0;
 
     if (this.scene.player && this.scene.player.sprite.active) {
